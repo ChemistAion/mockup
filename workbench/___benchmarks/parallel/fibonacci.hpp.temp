@@ -1,0 +1,49 @@
+#pragma once
+
+#include "parallel.hpp"
+
+namespace Primitives
+{
+	template <int Level>
+	struct DeepTask
+	{
+		int result_ = -1;
+
+		void Process()
+		{
+			using namespace Mockup::Parallel::V2;
+
+			DeepTask<Level - 1> work1;
+			DeepTask<Level - 2> work2;
+
+			auto group = Fiber::GetCurrentGroup();
+
+			Fiber::AddTasksYielding(group, 1, &work1, &decltype(work1)::Process);
+			Fiber::AddTasksYielding(group, 1, &work2, &decltype(work2)::Process);
+
+			result_ = work1.result_ + work2.result_;
+		}
+	};
+
+	template<>
+	struct DeepTask<1>
+	{
+		int result_ = -1;
+
+		void Process()
+		{
+			result_ = 1;
+		}
+	};
+
+	template<>
+	struct DeepTask<0>
+	{
+		int result_ = -1;
+
+		void Process()
+		{
+			result_ = 0;
+		}
+	};
+}

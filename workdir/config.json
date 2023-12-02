@@ -1,0 +1,8 @@
+{
+  "test":
+  {
+    "bool": true,
+    "value": 42,
+    "name": "test"
+  }
+}

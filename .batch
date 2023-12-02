@@ -1,0 +1,4 @@
+hctstart D:\_mockup_dev\external\xcompiler D:\_mockup_dev\external\xcompiler\build
+hctbuild -s -x64 -vs2019 -no-dxilconv
+
+tools\sharpmake\bin\debug\Sharpmake.Application.exe /sources(@"mockup.sharpmake.cs")

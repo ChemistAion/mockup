@@ -1,0 +1,61 @@
+#include "binder.hpp"
+
+#include <functional>
+
+using namespace Primitives;
+
+//	TEST_F(Serializer, Binder_SimplePODs)
+//	{
+//		Field1 field1;
+//		Field2 field2;
+//		Field3 field3;
+//		Field4 field4;
+//		Field5 field5;
+//		Field6 field6;
+//		Field7 field7;
+//		Field8 field8;
+//		Field9 field9;
+//		Field10 field10;
+//		Field11 field11;
+//		Field12 field12;
+//		Field13 field13;
+//		Field14 field14;
+//		Field15 field15;
+//		Field16 field16;
+//	
+//		auto tuple_1 = BindAsTuple(field1);
+//		auto tuple_2 = BindAsTuple(field2);
+//		auto tuple_3 = BindAsTuple(field3);
+//		auto tuple_4 = BindAsTuple(field4);
+//		auto tuple_5 = BindAsTuple(field5);
+//		auto tuple_6 = BindAsTuple(field6);
+//		auto tuple_7 = BindAsTuple(field7);
+//		auto tuple_8 = BindAsTuple(field8);
+//		auto tuple_9 = BindAsTuple(field9);
+//		auto tuple_10 = BindAsTuple(field10);
+//		auto tuple_11 = BindAsTuple(field11);
+//		auto tuple_12 = BindAsTuple(field12);
+//		auto tuple_13 = BindAsTuple(field13);
+//		auto tuple_14 = BindAsTuple(field14);
+//		auto tuple_15 = BindAsTuple(field15);
+//		auto tuple_16 = BindAsTuple(field16);
+//	
+//		auto tie_1 = BindAsTie(field1);
+//		auto tie_2 = BindAsTie(field2);
+//		auto tie_3 = BindAsTie(field3);
+//		auto tie_4 = BindAsTie(field4);
+//		auto tie_5 = BindAsTie(field5);
+//		auto tie_6 = BindAsTie(field6);
+//		auto tie_7 = BindAsTie(field7);
+//		auto tie_8 = BindAsTie(field8);
+//		auto tie_9 = BindAsTie(field9);
+//		auto tie_10 = BindAsTie(field10);
+//		auto tie_11 = BindAsTie(field11);
+//		auto tie_12 = BindAsTie(field12);
+//		auto tie_13 = BindAsTie(field13);
+//		auto tie_14 = BindAsTie(field14);
+//		auto tie_15 = BindAsTie(field15);
+//		auto tie_16 = BindAsTie(field16);
+//	
+//		return;
+//	}

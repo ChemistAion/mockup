@@ -1,0 +1,359 @@
+#pragma once
+
+#include "parallel.hpp"
+
+#include <any>
+#include <functional>
+#include <vector>
+
+namespace Primitives
+{
+	static constexpr std::uint32_t data1_ = 0xa5a5a5a5;
+	static constexpr std::uint32_t data2_ = 0x3c3c3c3c;
+	static constexpr std::uint32_t data3_ = 0x99999999;
+	static constexpr std::uint32_t data4_ = 0x66666666;
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	struct TestStruct
+	{
+		std::uint32_t output1_ = 0x12345678;
+		std::uint32_t output2_ = 0x12345678;
+		std::uint32_t output3_ = 0x12345678;
+		std::uint32_t output4_ = 0x12345678;
+
+		void testfunc1(void*)
+		{
+			output1_ = data1_ ^ data2_;
+			output1_ ^= data3_;
+			output1_ += data4_;
+			output1_ ^= data3_;
+		}
+
+		void testfunc2(void*)
+		{
+			++output2_;
+		}
+
+		void testfunc3(void*)
+		{
+			--output3_;
+		}
+
+		void testfunc4(void*)
+		{
+			output4_ = data3_ ^ data4_;
+		}
+
+		void testfunc5(void*)
+		{
+			output4_ = data3_ ^ data4_;
+		}
+
+		void testfunc11(void* fiber, std::uint32_t arg1)
+		{
+			fiber;
+
+			output1_ = data1_ ^ data2_;
+			output1_ ^= data3_;
+			output1_ += data4_;
+			output1_ ^= data3_;
+
+			output1_ += arg1;
+		}
+
+		void testfunc22(void* fiber, std::uint32_t arg1, std::uint32_t arg2)
+		{
+			fiber;
+
+			++output2_;
+			output2_ += arg1 + arg2;
+		}
+
+		void testfunc33(void* fiber, std::uint32_t arg1, std::uint32_t arg2, std::uint32_t arg3)
+		{
+			fiber;
+
+			--output3_;
+			output3_ += arg1 + arg2 + arg3;
+		}
+
+		void testfunc44(void* fiber, std::uint32_t arg1, std::uint32_t arg2, std::uint32_t arg3, std::uint32_t arg4)
+		{
+			fiber;
+
+			output4_ = data3_ ^ data4_;
+			output4_ += arg1 + arg2 + arg3 + arg4;
+		}
+	};
+
+	std::uint32_t output1_;
+	std::uint32_t output2_;
+	std::uint32_t output3_;
+	std::uint32_t output4_;
+
+	void testfuncarg1(void* fiber, std::uint32_t arg1)
+	{
+		fiber;
+
+		output1_ = data1_ ^ data2_;
+		output1_ ^= data3_;
+		output1_ += data4_;
+		output1_ ^= data3_;
+
+		output1_ += arg1;
+	}
+
+	void testfuncarg2(void* fiber, std::uint32_t arg1, std::uint32_t arg2)
+	{
+		fiber;
+
+		output2_ += arg1 + arg2;
+	}
+
+	void testfuncarg3(void* fiber, std::uint32_t arg1, std::uint32_t arg2, std::uint32_t arg3)
+	{
+		fiber;
+
+		output3_ += arg1 + arg2 + arg3;
+	}
+
+	void testfuncarg4(void* fiber, std::uint32_t arg1, std::uint32_t arg2, std::uint32_t arg3, std::uint32_t arg4)
+	{
+		fiber;
+
+		output4_ = data3_ ^ data4_;
+		output4_ += arg1 + arg2 + arg3 + arg4;
+	}
+
+	void testfuncarg5(void*)
+	{
+		output4_ = data3_ ^ data4_;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+	class Groupie
+	{
+		int id_ = -1;
+	public:
+		static constexpr int Default = 0;
+		static constexpr int Invalid = -1;
+
+		Groupie(int id = Invalid)
+		{
+			id_ = id;
+		}
+
+		auto GetId() const
+		{
+			return id_;
+		}
+	};
+
+////////////////////////////////////////////////////////////////////////////////
+
+	namespace TaskLambdaInvoke
+	{
+		using Trampoline = std::function<void(void*)>;
+
+		struct Bundle
+		{
+			Trampoline trampoline_;
+			Groupie group_;
+		};
+
+		template<typename Instance>
+		Bundle AddTask(Groupie group, Instance* instance, void(Instance::*routine)(void*))
+		{
+			Bundle bundle;
+			bundle.group_ = group;
+
+			Trampoline function = [instance, routine](void* fiber)
+			{
+				std::invoke(routine, instance, fiber);
+			};
+
+			bundle.trampoline_ = function;
+
+			return bundle;
+		}
+	}
+
+////////////////////////////////////////////////////////////////////////////////
+
+	namespace TaskFunctionalBind
+	{
+		using Trampoline = std::function<void(void*)>;
+
+		struct Bundle
+		{
+			Trampoline trampoline_;
+			Groupie group_;
+		};
+
+		template<typename Instance>
+		Bundle AddTask(Groupie group, Instance* instance, void(Instance::*routine)(void*))
+		{
+			Bundle bundle;
+			bundle.group_ = group;
+
+			bundle.trampoline_ = std::bind(routine, instance, nullptr);
+
+			return bundle;
+		}
+	}
+
+////////////////////////////////////////////////////////////////////////////////
+
+	namespace TaskVTable
+	{
+		struct vtable
+		{
+			void(*testfunc_1)(void* this_);
+//			void(*delete_)(void* this_);
+//			void* (*clone)(void const* this_);
+//			void(*copy)(void* p, void const* other);
+//			void(*dtor)(void* p);
+		};
+		
+		template <typename Instance>
+		vtable const CreateVT =
+		{
+			[](void* this_) { static_cast<Instance*>(this_)->testfunc1(nullptr); },
+//			[](void* this_) { delete static_cast<Instance*>(this_); },
+//			[](void const* this_) -> void* { return new Instance(*static_cast<Instance const*>(this_)); },
+//			[](void* p, void const* other) { new (p) Instance(*static_cast<Instance const*>(other)); },
+//			[](void* this_) { static_cast<Instance*>(this_)->~Instance(); }
+		};
+		
+		struct Trampoline
+		{
+			vtable const* const vtable_;
+			void* instance_;
+		public:
+			template <typename Instance>
+			Trampoline(Instance& instance)
+				: vtable_(&CreateVT<Instance>)
+				, instance_(&instance)
+			{
+			}
+		};
+
+		struct Bundle
+		{
+			Trampoline trampoline_;
+			Groupie group_;
+
+			template<typename Instance>
+			Bundle(Groupie group, Instance& instance)
+				: group_(group)
+				, trampoline_(instance)
+			{
+			}
+
+			inline void Execute()
+			{
+				trampoline_.vtable_->testfunc_1(trampoline_.instance_);
+			}
+		};
+		
+		template<typename Instance>
+		Bundle AddTask(Groupie group, Instance& instance)
+		{
+			Bundle bundle(group, instance);
+		
+			return bundle;
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	namespace TaskLambdaPackedAny
+	{
+		template <class... Arguments>
+		using PackedType = std::invoke_result_t<decltype(&std::make_tuple<Arguments...>), Arguments...>;
+
+		using Trampoline = std::function<void(const std::any&)>;
+
+		struct Bundle
+		{
+			Trampoline trampoline_;
+			std::any parameters_;
+			Groupie group_;
+		};
+
+		template<typename Instance>
+		Bundle AddTask(Groupie group, Instance* instance, void(Instance::* method)())
+		{
+			Bundle bundle;
+
+			bundle.group_ = group;
+
+			bundle.trampoline_ = [instance, method](const std::any& arguments)
+			{
+				arguments;
+				std::invoke(method, instance);
+			};
+
+			return bundle;
+		};
+
+		template<typename Instance, typename... Arguments, typename... Parameters>
+		Bundle AddTask(Groupie group, Instance* instance, void(Instance::* method)(Arguments...), Parameters&&... parameters)
+		{
+			Bundle bundle;
+	
+			bundle.group_ = group;
+	
+			bundle.parameters_ = std::make_any<PackedType<Parameters...>>(std::forward<Parameters>(parameters)...);
+	
+			bundle.trampoline_ = [instance, method](const std::any& arguments)
+			{
+				std::apply(method, std::tuple_cat(std::tie(instance), std::any_cast<PackedType<Arguments...>>(arguments)));
+			};
+	
+			return bundle;
+		};
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	namespace TaskTemplatedCallable
+	{
+		struct TaskConcept
+		{
+		};
+
+		template <class>
+		struct Task;
+
+		template <class Return, class... Arguments>
+		struct Task<Return(Arguments...)> : TaskConcept
+		{
+			std::function<Return(Arguments...)> trampoline_;
+			std::tuple<Arguments...> args_;
+
+			template <class Callable>
+			explicit Task(Callable&& callable, Arguments&&... arguments) :
+				trampoline_(std::forward<Callable>(callable)),
+				args_(std::forward<Arguments>(arguments)...)
+			{
+				auto test = std::make_any<std::tuple<Arguments...>>(std::forward<Arguments>(arguments)...);
+			}
+
+			decltype(auto) Execute()
+			{
+				return std::apply(trampoline_, args_);
+			}
+		};
+
+		template <class Callable, class... Arguments>
+		decltype(auto) CreateTask(Callable&& callable, Arguments&&... arguments)
+		{
+			return Task<std::invoke_result_t<Callable, Arguments...>(Arguments...)>(std::forward<Callable>(callable), std::forward<Arguments>(arguments)...);
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////////////////

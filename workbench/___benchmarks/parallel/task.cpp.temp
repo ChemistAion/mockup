@@ -1,0 +1,294 @@
+#include "parallel.hpp"
+#include "task.hpp"
+
+using namespace Primitives;
+
+////////////////////////////////////////////////////////////////////////////////
+
+static void TaskLambdaInvokeBenchmark(benchmark::State& state)
+{
+	using namespace TaskLambdaInvoke;
+
+	while (state.KeepRunning())
+	{
+		for (auto index = 0; index < state.range(0); ++index)
+		{
+			Groupie group(index);
+
+			TestStruct teststruct1;
+			TestStruct teststruct2;
+			TestStruct teststruct3;
+			TestStruct teststruct4;
+
+			auto r1 = AddTask(group, &teststruct1, &TestStruct::testfunc1);
+			auto r2 = AddTask(group, &teststruct2, &TestStruct::testfunc2);
+			auto r3 = AddTask(group, &teststruct3, &TestStruct::testfunc3);
+			auto r4 = AddTask(group, &teststruct4, &TestStruct::testfunc4);
+
+			r1.trampoline_(nullptr);
+			r2.trampoline_(nullptr);
+			r3.trampoline_(nullptr);
+			r4.trampoline_(nullptr);
+
+			state.PauseTiming();
+
+			{
+				bool check = true;
+
+				if (teststruct1.output1_ != 0xffffffff)
+					check = false;
+				if (teststruct2.output2_ != 0x12345678 + 1)
+					check = false;
+				if (teststruct3.output3_ != 0x12345678 - 1)
+					check = false;
+				if (teststruct4.output4_ != 0xffffffff)
+					check = false;
+
+				if (false == check)
+				{
+					state.SkipWithError("Failed");
+					break;
+				}
+			}
+
+			state.ResumeTiming();
+		}
+	}
+}
+
+BENCHMARK(TaskLambdaInvokeBenchmark)->Range(1, 256);
+
+////////////////////////////////////////////////////////////////////////////////
+
+static void TaskFunctionalBindBenchmark(benchmark::State& state)
+{
+	using namespace TaskFunctionalBind;
+
+	while (state.KeepRunning())
+	{
+		for (auto index = 0; index < state.range(0); ++index)
+		{
+			Groupie group(index);
+
+			TestStruct teststruct1;
+			TestStruct teststruct2;
+			TestStruct teststruct3;
+			TestStruct teststruct4;
+
+			auto r1 = AddTask(group, &teststruct1, &TestStruct::testfunc1);
+			auto r2 = AddTask(group, &teststruct2, &TestStruct::testfunc2);
+			auto r3 = AddTask(group, &teststruct3, &TestStruct::testfunc3);
+			auto r4 = AddTask(group, &teststruct4, &TestStruct::testfunc4);
+
+			r1.trampoline_(nullptr);
+			r2.trampoline_(nullptr);
+			r3.trampoline_(nullptr);
+			r4.trampoline_(nullptr);
+
+			state.PauseTiming();
+
+			{
+				bool check = true;
+
+				if (teststruct1.output1_ != 0xffffffff)
+					check = false;
+				if (teststruct2.output2_ != 0x12345678 + 1)
+					check = false;
+				if (teststruct3.output3_ != 0x12345678 - 1)
+					check = false;
+				if (teststruct4.output4_ != 0xffffffff)
+					check = false;
+
+				if (false == check)
+				{
+					state.SkipWithError("Failed");
+					break;
+				}
+			}
+
+			state.ResumeTiming();
+		}
+	}
+}
+
+BENCHMARK(TaskFunctionalBindBenchmark)->Range(1, 256);
+
+////////////////////////////////////////////////////////////////////////////////
+
+static void TaskVTableBenchmark(benchmark::State& state)
+{
+	using namespace TaskVTable;
+
+	while (state.KeepRunning())
+	{
+		for (auto index = 0; index < state.range(0); ++index)
+		{
+			Groupie group(index);
+
+			TestStruct teststruct1;
+			TestStruct teststruct2;
+			TestStruct teststruct3;
+			TestStruct teststruct4;
+
+			auto r1 = AddTask(group, teststruct1);
+			auto r2 = AddTask(group, teststruct2);
+			auto r3 = AddTask(group, teststruct3);
+			auto r4 = AddTask(group, teststruct4);
+
+			r1.Execute();
+			r2.Execute();
+			r3.Execute();
+			r4.Execute();
+
+			state.PauseTiming();
+
+			{
+				bool check = true;
+
+				if (teststruct1.output1_ != 0xffffffff)
+					check = false;
+				if (teststruct2.output1_ != 0xffffffff)
+					check = false;
+				if (teststruct3.output1_ != 0xffffffff)
+					check = false;
+				if (teststruct4.output1_ != 0xffffffff)
+					check = false;
+
+				if (false == check)
+				{
+					state.SkipWithError("Failed");
+					break;
+				}
+			}
+
+			state.ResumeTiming();
+		}
+	}
+}
+
+BENCHMARK(TaskVTableBenchmark)->Range(1, 256);
+
+////////////////////////////////////////////////////////////////////////////////
+
+static void TaskLambdaPackedAnyBenchmark(benchmark::State& state)
+{
+	using namespace TaskLambdaPackedAny;
+
+	while (state.KeepRunning())
+	{
+		for (auto index = 0; index < state.range(0); ++index)
+		{
+			Groupie group(index);
+		
+			TestStruct teststruct1;
+			TestStruct teststruct2;
+			TestStruct teststruct3;
+			TestStruct teststruct4;
+
+			void* fiber = nullptr;
+			std::uint32_t arg1 = 1;
+			std::uint32_t arg2 = 2;
+			std::uint32_t arg3 = 3;
+			std::uint32_t arg4 = 4;
+		
+			auto r1 = AddTask(group, &teststruct1, &TestStruct::testfunc11, fiber, arg1);
+			auto r2 = AddTask(group, &teststruct2, &TestStruct::testfunc22, fiber, arg1, arg2);
+			auto r3 = AddTask(group, &teststruct3, &TestStruct::testfunc33, fiber, arg1, arg2, arg3);
+			auto r4 = AddTask(group, &teststruct4, &TestStruct::testfunc44, fiber, arg1, arg2, arg3, arg4);
+		
+//			auto test = AddTask(group, &teststruct1, &TestStruct::testfunc5);
+
+			r1.trampoline_(r1.parameters_);
+			r2.trampoline_(r2.parameters_);
+			r3.trampoline_(r3.parameters_);
+			r4.trampoline_(r4.parameters_);
+
+			state.PauseTiming();
+		
+			{
+				bool check = true;
+			
+				if (teststruct1.output1_ != 0xffffffff + arg1)
+					check = false;
+				if (teststruct2.output2_ != 0x12345678 + 1 + arg1 + arg2)
+					check = false;
+				if (teststruct3.output3_ != 0x12345678 - 1 + arg1 + arg2 + arg3)
+					check = false;
+				if (teststruct4.output4_ != 0xffffffff + arg1 + arg2 + arg3 + arg4)
+					check = false;
+			
+				if (false == check)
+				{
+					state.SkipWithError("Failed");
+					break;
+				}
+			}
+			
+			state.ResumeTiming();
+		}
+	}
+}
+
+BENCHMARK(TaskLambdaPackedAnyBenchmark)->Range(1, 256);
+
+////////////////////////////////////////////////////////////////////////////////
+
+static void TaskTemplatedCallableBenchmark(benchmark::State& state)
+{
+	using namespace TaskTemplatedCallable;
+
+	while (state.KeepRunning())
+	{
+		for (auto index = 0; index < state.range(0); ++index)
+		{
+			output1_ = 0x12345678;
+			output2_ = 0x12345678;
+			output3_ = 0x12345678;
+			output4_ = 0x12345678;
+
+			void* fiber = nullptr;
+			std::uint32_t arg1 = 1;
+			std::uint32_t arg2 = 2;
+			std::uint32_t arg3 = 3;
+			std::uint32_t arg4 = 4;
+
+			auto task1 = CreateTask(testfuncarg1, fiber, arg1);
+			auto task2 = CreateTask(testfuncarg2, fiber, arg1, arg2);
+			auto task3 = CreateTask(testfuncarg3, fiber, arg1, arg2, arg3);
+			auto task4 = CreateTask(testfuncarg4, fiber, arg1, arg2, arg3, arg4);
+			auto task5 = CreateTask(testfuncarg5, fiber);
+
+			task1.Execute();
+			task2.Execute();
+			task3.Execute();
+			task4.Execute();
+
+			state.PauseTiming();
+
+			{
+				bool check = true;
+
+				if (output1_ != 0xffffffff + arg1)
+					check = false;
+				if (output2_ != 0x12345678 + arg1 + arg2)
+					check = false;
+				if (output3_ != 0x12345678 + arg1 + arg2 + arg3)
+					check = false;
+				if (output4_ != 0xffffffff + arg1 + arg2 + arg3 + arg4)
+					check = false;
+
+				if (false == check)
+				{
+					state.SkipWithError("Failed");
+					break;
+				}
+			}
+
+			state.ResumeTiming();
+		}
+	}
+}
+
+BENCHMARK(TaskTemplatedCallableBenchmark)->Range(1, 256);
+
+////////////////////////////////////////////////////////////////////////////////

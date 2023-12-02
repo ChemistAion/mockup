@@ -1,0 +1,485 @@
+#include "serializer.hpp"
+
+#include <vector>
+#include <map>
+#include <memory>
+
+namespace Primitives
+{
+	////////////////////////////////////////////////////////////////////////////////
+
+	struct EmptyPOD
+	{
+	};
+
+	struct OnePOD
+	{
+		int number1;
+	};
+
+	struct TwoPOD
+	{
+		int number1 = 1234;
+		int number2 = 4321;
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	struct ComplexEmpty1POD
+	{
+		EmptyPOD empty1;
+		EmptyPOD empty2;
+		EmptyPOD empty3;
+	};
+
+	struct ComplexEmpty2POD
+	{
+		int number1;
+		EmptyPOD empty1;
+		int number2;
+	};
+
+	struct ComplexEmptyInheritance : public ComplexEmpty1POD
+	{
+		int number1;
+		int number2;
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	struct ComplexCtors0
+	{
+		ComplexCtors0() = delete;
+		ComplexCtors0(ComplexCtors0&&) = delete;
+		ComplexCtors0(const ComplexCtors0&) = delete;
+	};
+
+	struct ComplexCtors1
+	{
+		int number1;
+		int number2;
+		int number3;
+
+		ComplexCtors1() = delete;
+		ComplexCtors1(ComplexCtors1&&) = delete;
+		ComplexCtors1(const ComplexCtors1&) = delete;
+	};
+
+	struct ComplexCtors2
+	{
+		int number1;
+		int number2;
+		int number3;
+		
+		ComplexCtors2() = delete;
+		ComplexCtors2(ComplexCtors2&&) = default;
+		ComplexCtors2(const ComplexCtors2&) = delete;
+	};
+
+	struct ComplexCtors3
+	{
+		int number1;
+		int number2;
+		int number3;
+
+		ComplexCtors3() = delete;
+		ComplexCtors3(ComplexCtors3&&) = delete;
+		ComplexCtors3(const ComplexCtors3&) = default;
+	};
+
+	struct ComplexCtors4
+	{
+		int number1;
+		int number2;
+		int number3;
+
+		ComplexCtors4() = default;
+		ComplexCtors4(ComplexCtors4&&) = delete;
+		ComplexCtors4(const ComplexCtors4&) = default;
+	};
+
+	struct ComplexCtors5
+	{
+		int number1;
+		int number2;
+		int number3;
+
+		ComplexCtors5() = default;
+		ComplexCtors5(ComplexCtors5&&) = default;
+		ComplexCtors5(const ComplexCtors5&) = default;
+	};
+
+	struct ComplexCtors6
+	{
+		int number1;
+		int number2;
+		int number3;
+
+		ComplexCtors6() = default;
+		ComplexCtors6(ComplexCtors6&&) = delete;
+		ComplexCtors6(const ComplexCtors6&) = delete;
+	};
+
+	struct ComplexCtors7
+	{
+		int number1;
+		int number2;
+		int number3;
+
+		ComplexCtors7() = default;
+		ComplexCtors7(ComplexCtors7&&) = default;
+		ComplexCtors7(const ComplexCtors7&) = delete;
+	};
+
+	struct ComplexCtors8
+	{
+		int number1;
+		int number2;
+		int number3;
+
+		ComplexCtors8()
+		{
+		}
+	};
+
+	struct ComplexCtors9
+	{
+		int number1;
+		int number2;
+		int number3;
+
+		ComplexCtors9()
+		{
+		}
+
+		ComplexCtors9(ComplexCtors9&&) = delete;
+		ComplexCtors9(const ComplexCtors9&) = delete;
+	};
+
+	struct ComplexCtors10
+	{
+		int number1;
+		int number2;
+		int number3;
+
+		ComplexCtors10()
+		{
+		}
+
+		ComplexCtors10(ComplexCtors10&&) = default;
+		ComplexCtors10(const ComplexCtors10&) = delete;
+	};
+
+	struct ComplexCtors11
+	{
+		int number1;
+		int number2;
+		int number3;
+
+		ComplexCtors11()
+		{
+		}
+
+		ComplexCtors11(ComplexCtors11&&) = delete;
+		ComplexCtors11(const ComplexCtors11&) = default;
+	};
+
+	struct ComplexCtors12
+	{
+		int number1;
+		int number2;
+		int number3;
+
+		ComplexCtors12()
+		{
+		}
+
+		ComplexCtors12(ComplexCtors12&&) = default;
+		ComplexCtors12(const ComplexCtors12&) = default;
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	struct Uncopyable0
+	{
+		Uncopyable0() = default;
+		Uncopyable0(Uncopyable0&&) = default;
+	};
+
+	struct Immobile0
+	{
+		Immobile0() = default;
+		Immobile0(const Immobile0&) = delete;
+	};
+
+	struct Uncopyable
+	{
+		Uncopyable() = default;
+		Uncopyable(Uncopyable&&) = default;
+
+		int number1;
+	};
+
+	struct Immobile
+	{
+		Immobile() = default;
+		Immobile(const Immobile&) = delete;
+
+		int number1;
+	};
+
+	struct Uncopyable3
+	{
+		Uncopyable3() = default;
+		Uncopyable3(Uncopyable3&&) = default;
+
+		int number1;
+		int number2;
+		int number3;
+	};
+
+	struct Immobile3
+	{
+		Immobile3() = default;
+		Immobile3(const Immobile3&) = delete;
+
+		int number1;
+		int number2;
+		int number3;
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	struct Field1
+	{
+		int number1 = 1;
+	};
+
+	struct Field2
+	{
+		int number1 = 1;
+		int number2 = 2;
+	};
+
+	struct Field3
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+	};
+
+	struct Field4
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+	};
+
+	struct Field5
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+	};
+
+	struct Field6
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+		int number6 = 6;
+	};
+
+	struct Field7
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+		int number6 = 6;
+		int number7 = 7;
+	};
+
+	struct Field8
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+		int number6 = 6;
+		int number7 = 7;
+		int number8 = 8;
+	};
+
+	struct Field9
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+		int number6 = 6;
+		int number7 = 7;
+		int number8 = 8;
+		int number9 = 9;
+	};
+
+	struct Field10
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+		int number6 = 6;
+		int number7 = 7;
+		int number8 = 8;
+		int number9 = 9;
+		int number10 = 10;
+	};
+
+	struct Field11
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+		int number6 = 6;
+		int number7 = 7;
+		int number8 = 8;
+		int number9 = 9;
+		int number10 = 10;
+		int number11 = 11;
+	};
+
+	struct Field12
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+		int number6 = 6;
+		int number7 = 7;
+		int number8 = 8;
+		int number9 = 9;
+		int number10 = 10;
+		int number11 = 11;
+		int number12 = 12;
+	};
+
+	struct Field13
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+		int number6 = 6;
+		int number7 = 7;
+		int number8 = 8;
+		int number9 = 9;
+		int number10 = 10;
+		int number11 = 11;
+		int number12 = 12;
+		int number13 = 13;
+	};
+
+	struct Field14
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+		int number6 = 6;
+		int number7 = 7;
+		int number8 = 8;
+		int number9 = 9;
+		int number10 = 10;
+		int number11 = 11;
+		int number12 = 12;
+		int number13 = 13;
+		int number14 = 14;
+	};
+
+	struct Field15
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+		int number6 = 6;
+		int number7 = 7;
+		int number8 = 8;
+		int number9 = 9;
+		int number10 = 10;
+		int number11 = 11;
+		int number12 = 12;
+		int number13 = 13;
+		int number14 = 14;
+		int number15 = 15;
+	};
+
+	struct Field16
+	{
+		int number1 = 1;
+		int number2 = 2;
+		int number3 = 3;
+		int number4 = 4;
+		int number5 = 5;
+		int number6 = 6;
+		int number7 = 7;
+		int number8 = 8;
+		int number9 = 9;
+		int number10 = 10;
+		int number11 = 11;
+		int number12 = 12;
+		int number13 = 13;
+		int number14 = 14;
+		int number15 = 15;
+		int number16 = 16;
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	struct ComplexStorage1
+	{
+		std::vector<int> test;
+	};
+
+	struct ComplexStorage2
+	{
+		std::vector<int> test1;
+		std::vector<char> test2;
+		std::vector<float> test3;
+	};
+
+	struct ComplexStorage3
+	{
+		std::vector<ComplexStorage1> test1;
+		std::vector<ComplexStorage2> test2;
+	};
+
+	struct ComplexStorage4
+	{
+		std::vector<ComplexStorage1> test1;
+		std::vector<ComplexStorage2> test2;
+	};
+
+	struct ComplexStorage5
+	{
+		std::vector<ComplexStorage3> test1;
+		std::unique_ptr<ComplexStorage1> test2;
+		std::unique_ptr<ComplexStorage2> test3;
+	};
+}

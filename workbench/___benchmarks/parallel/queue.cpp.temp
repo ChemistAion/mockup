@@ -1,0 +1,98 @@
+#include "parallel.hpp"
+
+#include "queue.hpp"
+
+using namespace Primitives;
+
+////////////////////////////////////////////////////////////////////////////////
+
+Queue_DmitryVyukov<int, 2048> Queue_DmitryVyukov_Fixture::queue_[PoolSize_Tasks];
+
+BENCHMARK_DEFINE_F(Queue_DmitryVyukov_Fixture, Queue_DmitryVyukov_Benchmark)(benchmark::State& state)
+{
+	while (state.KeepRunning())
+	{
+//		if (state.thread_index & 1)
+		{
+			for (auto enqueue = state.range(0); enqueue--;)
+			{
+				while(!queue_[state.thread_index].Enqueue(state.thread_index));
+			}
+		}
+//		else
+		{
+			for (auto dequeue = state.range(0); dequeue--;)
+			{
+				int test;
+				while(!queue_[state.thread_index].Dequeue(test));
+			}
+		}
+	}
+}
+
+BENCHMARK_REGISTER_F(Queue_DmitryVyukov_Fixture, Queue_DmitryVyukov_Benchmark)->RangeMultiplier(2)->Range(1 << 5, 1 << 10)->Threads(PoolSize_Tasks);
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::array<int, 2048> MutexArray_Fixture::array_;
+std::mutex MutexArray_Fixture::lock_;
+
+BENCHMARK_DEFINE_F(MutexArray_Fixture, MutexArray_Benchmark)(benchmark::State& state)
+{
+	while (state.KeepRunning())
+	{
+		if (state.thread_index & 1)
+		{
+			std::lock_guard<std::mutex> lock(lock_);
+			for (auto enqueue = state.range(0); enqueue--;)
+			{
+				array_[enqueue & (array_.size() - 1)] = state.thread_index;
+			}
+		}
+		else
+		{
+			std::lock_guard<std::mutex> lock(lock_);
+			for (auto dequeue = state.range(0); dequeue--;)
+			{
+				auto test = array_[dequeue & (array_.size() - 1)];
+
+				if (test < 0)
+				{
+					return;
+				}
+			}
+		}
+	}
+}
+
+BENCHMARK_REGISTER_F(MutexArray_Fixture, MutexArray_Benchmark)->RangeMultiplier(2)->Range(1 << 5, 1 << 10)->Threads(PoolSize_Tasks);
+
+////////////////////////////////////////////////////////////////////////////////
+
+Queue_RichieSams<int> Queue_RichieSams_Fixture::queue_[PoolSize_Tasks];
+
+BENCHMARK_DEFINE_F(Queue_RichieSams_Fixture, Queue_RichieSams_Benchmark)(benchmark::State& state)
+{
+	while (state.KeepRunning())
+	{
+//		if (state.thread_index & 1)
+		{
+			for (auto enqueue = state.range(0); enqueue--;)
+			{
+				queue_[state.thread_index].Enqueue(state.thread_index);
+			}
+		}
+//		else
+		{
+			for (auto dequeue = state.range(0); dequeue--;)
+			{
+				int test;
+				while (!queue_[state.thread_index].Dequeue(&test));
+			}
+		}
+	}
+}
+
+BENCHMARK_REGISTER_F(Queue_RichieSams_Fixture, Queue_RichieSams_Benchmark)->RangeMultiplier(2)->Range(1 << 5, 1 << 10)->Threads(PoolSize_Tasks);
+
+////////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,934 @@
+#include "director.hpp"
+
+#include <type_traits>
+
+namespace Primitives
+{
+	struct Position
+	{
+		int x_ { 0 };
+		int y_ { 0 };
+
+		Position() = default;
+		Position(int x, int y)
+			: x_(x)
+			, y_(y)
+		{
+		}
+	};
+
+	struct Velocity
+	{
+		int x_{ 0 };
+		int y_{ 0 };
+
+		Velocity() = default;
+		Velocity(int x, int y)
+			: x_(x)
+			, y_(y)
+		{
+		}
+	};
+
+	struct Movable
+	{
+	};
+	static_assert(std::is_empty_v<Movable>, "Movable is not empty");
+
+	struct Disabled
+	{
+	};
+	static_assert(std::is_empty_v<Disabled>, "Disabled is not empty");
+
+	bool operator==(const Position& lhs, const Position& rhs)
+	{
+		return lhs.x_ == rhs.x_ && lhs.y_ == rhs.y_;
+	}
+
+	bool operator==(const Velocity& lhs, const Velocity& rhs)
+	{
+		return lhs.x_ == rhs.x_ && lhs.y_ == rhs.y_;
+	}
+}
+
+//	TEST_F(Director, EntityId)
+//	{
+//		EntityId id_empty_a;
+//		EntityId id_empty_b;
+//	
+//		ASSERT_TRUE(id_empty_a.GetIndex() == cDirector_EntityId_Invalid);
+//		ASSERT_TRUE(id_empty_a.GetVersion() == cDirector_EntityId_Invalid);
+//		ASSERT_TRUE(id_empty_a == id_empty_b);
+//		ASSERT_TRUE(id_empty_a == EntityId());
+//	
+//		auto id_a = id_empty_a;
+//		ASSERT_TRUE(id_a == id_empty_a);
+//		ASSERT_TRUE(id_a == EntityId());
+//	
+//		auto id_b = id_a;
+//		ASSERT_TRUE(id_b == id_empty_a);
+//		ASSERT_TRUE(id_b == EntityId());
+//		ASSERT_TRUE(id_b == id_a);
+//	
+//		auto id_c = id_b;
+//		ASSERT_TRUE(id_c == id_empty_a);
+//		ASSERT_TRUE(id_c == EntityId());
+//		ASSERT_TRUE(id_c == id_a);
+//		ASSERT_TRUE(id_c == id_b);
+//	
+//		////////////////////////////////////////////////////////////////////////////////
+//	
+//		{
+//			ASSERT_TRUE(id_a.GetIndex() == 0u);
+//			ASSERT_TRUE(id_b.GetIndex() == 0u);
+//			ASSERT_TRUE(id_c.GetIndex() == 0u);
+//			ASSERT_TRUE(id_a.GetVersion() == 0u);
+//			ASSERT_TRUE(id_b.GetVersion() == 0u);
+//			ASSERT_TRUE(id_c.GetVersion() == 0u);
+//	
+//			auto id_aa = id_a.GetNextIndex();
+//			auto id_bb = id_b.GetNextIndex();
+//			auto id_cc = id_c.GetNextIndex();
+//	
+//			ASSERT_TRUE(id_a.GetIndex() == 0u);
+//			ASSERT_TRUE(id_b.GetIndex() == 0u);
+//			ASSERT_TRUE(id_c.GetIndex() == 0u);
+//			ASSERT_TRUE(id_a.GetVersion() == 0u);
+//			ASSERT_TRUE(id_b.GetVersion() == 0u);
+//			ASSERT_TRUE(id_c.GetVersion() == 0u);
+//	
+//			ASSERT_TRUE(id_aa.GetIndex() == 1u);
+//			ASSERT_TRUE(id_bb.GetIndex() == 1u);
+//			ASSERT_TRUE(id_cc.GetIndex() == 1u);
+//			ASSERT_TRUE(id_aa.GetVersion() == 0u);
+//			ASSERT_TRUE(id_bb.GetVersion() == 0u);
+//			ASSERT_TRUE(id_cc.GetVersion() == 0u);
+//	
+//			auto id_aaa = id_aa.GetNextIndex();
+//			auto id_bbb = id_bb.GetNextIndex();
+//			auto id_ccc = id_cc.GetNextIndex();
+//	
+//			ASSERT_TRUE(id_a.GetIndex() == 0u);
+//			ASSERT_TRUE(id_b.GetIndex() == 0u);
+//			ASSERT_TRUE(id_c.GetIndex() == 0u);
+//			ASSERT_TRUE(id_a.GetVersion() == 0u);
+//			ASSERT_TRUE(id_b.GetVersion() == 0u);
+//			ASSERT_TRUE(id_c.GetVersion() == 0u);
+//	
+//			ASSERT_TRUE(id_aa.GetIndex() == 1u);
+//			ASSERT_TRUE(id_bb.GetIndex() == 1u);
+//			ASSERT_TRUE(id_cc.GetIndex() == 1u);
+//			ASSERT_TRUE(id_aa.GetVersion() == 0u);
+//			ASSERT_TRUE(id_bb.GetVersion() == 0u);
+//			ASSERT_TRUE(id_cc.GetVersion() == 0u);
+//	
+//			ASSERT_TRUE(id_aaa.GetIndex() == 2u);
+//			ASSERT_TRUE(id_bbb.GetIndex() == 2u);
+//			ASSERT_TRUE(id_ccc.GetIndex() == 2u);
+//			ASSERT_TRUE(id_aaa.GetVersion() == 0u);
+//			ASSERT_TRUE(id_bbb.GetVersion() == 0u);
+//			ASSERT_TRUE(id_ccc.GetVersion() == 0u);
+//		}
+//	
+//		////////////////////////////////////////////////////////////////////////////////
+//	
+//		{
+//			ASSERT_TRUE(id_a.GetIndex() == 0u);
+//			ASSERT_TRUE(id_b.GetIndex() == 0u);
+//			ASSERT_TRUE(id_c.GetIndex() == 0u);
+//			ASSERT_TRUE(id_a.GetVersion() == 0u);
+//			ASSERT_TRUE(id_b.GetVersion() == 0u);
+//			ASSERT_TRUE(id_c.GetVersion() == 0u);
+//	
+//			auto id_aa = id_a.GetNextVersion();
+//			auto id_bb = id_b.GetNextVersion();
+//			auto id_cc = id_c.GetNextVersion();
+//	
+//			ASSERT_TRUE(id_a.GetIndex() == 0u);
+//			ASSERT_TRUE(id_b.GetIndex() == 0u);
+//			ASSERT_TRUE(id_c.GetIndex() == 0u);
+//			ASSERT_TRUE(id_a.GetVersion() == 0u);
+//			ASSERT_TRUE(id_b.GetVersion() == 0u);
+//			ASSERT_TRUE(id_c.GetVersion() == 0u);
+//	
+//			ASSERT_TRUE(id_aa.GetIndex() == 0u);
+//			ASSERT_TRUE(id_bb.GetIndex() == 0u);
+//			ASSERT_TRUE(id_cc.GetIndex() == 0u);
+//			ASSERT_TRUE(id_aa.GetVersion() == 1u);
+//			ASSERT_TRUE(id_bb.GetVersion() == 1u);
+//			ASSERT_TRUE(id_cc.GetVersion() == 1u);
+//	
+//			auto id_aaa = id_aa.GetNextVersion();
+//			auto id_bbb = id_bb.GetNextVersion();
+//			auto id_ccc = id_cc.GetNextVersion();
+//	
+//			ASSERT_TRUE(id_a.GetIndex() == 0u);
+//			ASSERT_TRUE(id_b.GetIndex() == 0u);
+//			ASSERT_TRUE(id_c.GetIndex() == 0u);
+//			ASSERT_TRUE(id_a.GetVersion() == 0u);
+//			ASSERT_TRUE(id_b.GetVersion() == 0u);
+//			ASSERT_TRUE(id_c.GetVersion() == 0u);
+//	
+//			ASSERT_TRUE(id_aa.GetIndex() == 0u);
+//			ASSERT_TRUE(id_bb.GetIndex() == 0u);
+//			ASSERT_TRUE(id_cc.GetIndex() == 0u);
+//			ASSERT_TRUE(id_aa.GetVersion() == 1u);
+//			ASSERT_TRUE(id_bb.GetVersion() == 1u);
+//			ASSERT_TRUE(id_cc.GetVersion() == 1u);
+//	
+//			ASSERT_TRUE(id_aaa.GetIndex() == 0u);
+//			ASSERT_TRUE(id_bbb.GetIndex() == 0u);
+//			ASSERT_TRUE(id_ccc.GetIndex() == 0u);
+//			ASSERT_TRUE(id_aaa.GetVersion() == 2u);
+//			ASSERT_TRUE(id_bbb.GetVersion() == 2u);
+//			ASSERT_TRUE(id_ccc.GetVersion() == 2u);
+//		}
+//	
+//		////////////////////////////////////////////////////////////////////////////////
+//	}
+
+TEST_F(Director, Entity_Operators)
+{
+	Registry world;
+
+	Entity entity1a { world };
+	Entity entity1b { world };
+	auto entity1aa = entity1a;
+	auto entity1bb = entity1b;
+
+	auto entity2a = world.CreateEntity();
+	auto entity2b = world.CreateEntity();
+	auto entity2aa = entity2a;
+	auto entity2bb = entity2b;
+
+	ASSERT_TRUE(entity1a == entity1a);
+	ASSERT_TRUE(entity1b == entity1b);
+	ASSERT_TRUE(entity1a == entity1b);
+
+	ASSERT_FALSE(entity1a != entity1a);
+	ASSERT_FALSE(entity1b != entity1b);
+	ASSERT_FALSE(entity1a != entity1b);
+	
+	ASSERT_TRUE(entity2a != entity1a);
+	ASSERT_TRUE(entity2b != entity1b);
+
+	ASSERT_FALSE(entity2a == entity1a);
+	ASSERT_FALSE(entity2b == entity1b);
+
+	ASSERT_TRUE(entity2a != entity2b);
+	ASSERT_FALSE(entity2a == entity2b);
+
+	ASSERT_TRUE(entity2a == entity2aa);
+	ASSERT_TRUE(entity2b == entity2bb);
+	ASSERT_TRUE(entity2aa != entity2bb);
+	ASSERT_FALSE(entity2a != entity2aa);
+	ASSERT_FALSE(entity2b != entity2bb);
+	ASSERT_FALSE(entity2aa == entity2bb);
+};
+
+TEST_F(Director, Entity_Validation)
+{
+	Registry world;
+
+	Entity entity1a{ world };
+	Entity entity1b{ world };
+
+	auto entity1aa = entity1a;
+	auto entity1bb = entity1b;
+
+	ASSERT_FALSE(world.ValidateEntity(entity1a));
+	ASSERT_FALSE(world.ValidateEntity(entity1b));
+	ASSERT_FALSE(world.ValidateEntity(entity1aa));
+	ASSERT_FALSE(world.ValidateEntity(entity1bb));
+
+	auto entity2a = world.CreateEntity();
+	auto entity2b = world.CreateEntity();
+	auto entity2aa = entity2a;
+	auto entity2bb = entity2b;
+
+	ASSERT_FALSE(entity2a == entity2b);
+	ASSERT_TRUE(entity2a == entity2aa);
+
+	ASSERT_FALSE(entity2b == entity2a);
+	ASSERT_TRUE(entity2b == entity2bb);
+
+	ASSERT_TRUE(world.ValidateEntity(entity2a));
+	ASSERT_TRUE(world.ValidateEntity(entity2aa));
+	ASSERT_TRUE(world.ValidateEntity(entity2b));
+	ASSERT_TRUE(world.ValidateEntity(entity2bb));
+
+	world.DestroyEntity(entity2a);
+	ASSERT_FALSE(world.ValidateEntity(entity2a));
+	ASSERT_FALSE(world.ValidateEntity(entity2aa));
+	ASSERT_TRUE(world.ValidateEntity(entity2b));
+	ASSERT_TRUE(world.ValidateEntity(entity2bb));
+
+	world.DestroyEntity(entity2bb);
+	ASSERT_FALSE(world.ValidateEntity(entity2a));
+	ASSERT_FALSE(world.ValidateEntity(entity2aa));
+	ASSERT_FALSE(world.ValidateEntity(entity2b));
+	ASSERT_FALSE(world.ValidateEntity(entity2bb));
+
+	//TODO: ID index+version/instance
+};
+
+TEST_F(Director, Component_Operators)
+{
+	Registry world;
+
+	Entity entity1a{ world };
+	Entity entity1b{ world };
+
+	Component<Position> component1a{ entity1a };
+	Component<Velocity> component1b{ entity1b };
+
+	auto component1aa = component1a;
+	auto component1bb = component1b;
+
+	ASSERT_TRUE(component1a == component1a);
+	ASSERT_TRUE(component1b == component1b);
+
+	ASSERT_FALSE(component1a != component1a);
+	ASSERT_FALSE(component1b != component1b);
+
+	ASSERT_TRUE(component1a == component1aa);
+	ASSERT_TRUE(component1b == component1bb);
+	ASSERT_FALSE(component1a != component1aa);
+	ASSERT_FALSE(component1b != component1bb);
+
+}
+
+TEST_F(Director, Component_Validation)
+{
+	Registry world;
+
+	Entity entity1a{ world };
+	Entity entity1b{ world };
+
+	Component<Position> component1a{ entity1a };
+	Component<Velocity> component1b{ entity1b };
+
+	auto component1aa = component1a;
+	auto component1bb = component1b;
+
+	ASSERT_FALSE(entity1a.IsValid());
+	ASSERT_FALSE(entity1b.IsValid());
+	ASSERT_FALSE(component1a.IsValid());
+	ASSERT_FALSE(component1b.IsValid());
+	ASSERT_FALSE(component1aa.IsValid());
+	ASSERT_FALSE(component1bb.IsValid());
+}
+
+TEST_F(Director, Component_Owner)
+{
+	Registry world;
+
+	Entity entity_a{ world };
+	Entity entity_b{ world };
+
+	Component<Position> component1a{ entity_a };
+	Component<Velocity> component1b{ entity_b };
+	Component<Position> component2a{ entity_a };
+	Component<Velocity> component2b{ entity_b };
+
+	auto component1aa = component1a;
+	auto component2aa = component2a;
+	auto component1bb = component1b;
+	auto component2bb = component2b;
+
+	ASSERT_TRUE(component1a == component1aa);
+	ASSERT_TRUE(component1b == component1bb);
+	ASSERT_TRUE(component2a == component2aa);
+	ASSERT_TRUE(component2b == component2bb);
+
+	ASSERT_FALSE(component1a != component2a);
+	ASSERT_FALSE(component1aa != component2aa);
+
+	ASSERT_TRUE(component1a.GetOwner() == entity_a);
+	ASSERT_TRUE(component1b.GetOwner() == entity_b);
+	ASSERT_TRUE(component2a.GetOwner() == entity_a);
+	ASSERT_TRUE(component2b.GetOwner() == entity_b);
+	ASSERT_TRUE(component1aa.GetOwner() == entity_a);
+	ASSERT_TRUE(component2aa.GetOwner() == entity_a);
+	ASSERT_TRUE(component1bb.GetOwner() == entity_b);
+	ASSERT_TRUE(component2bb.GetOwner() == entity_b);
+
+	ASSERT_FALSE(component1a.GetOwner() != entity_b);
+	ASSERT_FALSE(component1b.GetOwner() != entity_a);
+	ASSERT_FALSE(component2a.GetOwner() != entity_b);
+	ASSERT_FALSE(component2b.GetOwner() != entity_a);
+	ASSERT_FALSE(component1aa.GetOwner() != entity_b);
+	ASSERT_FALSE(component2aa.GetOwner() != entity_b);
+	ASSERT_FALSE(component1bb.GetOwner() != entity_a);
+	ASSERT_FALSE(component2bb.GetOwner() != entity_a);
+}
+
+TEST_F(Director, Component_Accessing)
+{
+	Registry world;
+
+	Entity entity_a = world.CreateEntity();
+	Entity entity_b = world.CreateEntity();
+
+	Component<Position> component1a{ entity_a };
+	Component<Velocity> component1b{ entity_b };
+	Component<Position> component2a{ entity_a };
+	Component<Velocity> component2b{ entity_b };
+
+	auto component1aa = component1a;
+	auto component2aa = component2a;
+	auto component1bb = component1b;
+	auto component2bb = component2b;
+
+	ASSERT_FALSE(component1a.IsExisit());
+	ASSERT_FALSE(component1b.IsExisit());
+	ASSERT_FALSE(component2a.IsExisit());
+	ASSERT_FALSE(component2b.IsExisit());
+
+	ASSERT_FALSE(component1aa.IsExisit());
+	ASSERT_FALSE(component1bb.IsExisit());
+	ASSERT_FALSE(component2aa.IsExisit());
+	ASSERT_FALSE(component2bb.IsExisit());
+
+	ASSERT_FALSE(component1a.Find());
+	ASSERT_FALSE(component1b.Find());
+	ASSERT_FALSE(component2a.Find());
+	ASSERT_FALSE(component2b.Find());
+
+	ASSERT_FALSE(component1aa.Find());
+	ASSERT_FALSE(component1bb.Find());
+	ASSERT_FALSE(component2aa.Find());
+	ASSERT_FALSE(component2bb.Find());
+
+	ASSERT_THROW(component1a.Get(), std::logic_error);
+	ASSERT_THROW(component1b.Get(), std::logic_error);
+	ASSERT_THROW(component2a.Get(), std::logic_error);
+	ASSERT_THROW(component2b.Get(), std::logic_error);
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	ASSERT_TRUE(component1a.Assign(4, 2) == Position(4, 2));
+
+	ASSERT_TRUE(component1a.IsExisit());
+	ASSERT_TRUE(component1aa.IsExisit());
+	ASSERT_TRUE(component2a.IsExisit());
+	ASSERT_TRUE(component2aa.IsExisit());
+
+	ASSERT_FALSE(component1b.IsExisit());
+	ASSERT_FALSE(component2b.IsExisit());
+	ASSERT_FALSE(component1bb.IsExisit());
+	ASSERT_FALSE(component2bb.IsExisit());
+
+	ASSERT_TRUE(component1a.Find()->x_ == 4);
+	ASSERT_TRUE(component1a.Find()->y_ == 2);
+	ASSERT_TRUE(component2a.Find()->x_ == 4);
+	ASSERT_TRUE(component2a.Find()->y_ == 2);
+
+	ASSERT_TRUE(component1a.Get().x_ == 4);
+	ASSERT_TRUE(component1a.Get().y_ == 2);
+	ASSERT_TRUE(component2a.Get().x_ == 4);
+	ASSERT_TRUE(component2a.Get().y_ == 2);
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	component1a.Assign(2, 4);
+
+	ASSERT_TRUE(component1a.IsExisit());
+	ASSERT_TRUE(component1aa.IsExisit());
+	ASSERT_TRUE(component2a.IsExisit());
+	ASSERT_TRUE(component2aa.IsExisit());
+
+	ASSERT_FALSE(component1b.IsExisit());
+	ASSERT_FALSE(component2b.IsExisit());
+	ASSERT_FALSE(component1bb.IsExisit());
+	ASSERT_FALSE(component2bb.IsExisit());
+
+	ASSERT_TRUE(component1a.Find()->x_ == 2);
+	ASSERT_TRUE(component1a.Find()->y_ == 4);
+	ASSERT_TRUE(component2a.Find()->x_ == 2);
+	ASSERT_TRUE(component2a.Find()->y_ == 4);
+
+	ASSERT_TRUE(component1a.Get().x_ == 2);
+	ASSERT_TRUE(component1a.Get().y_ == 4);
+	ASSERT_TRUE(component2a.Get().x_ == 2);
+	ASSERT_TRUE(component2a.Get().y_ == 4);
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	ASSERT_TRUE(component1a.Remove());
+
+	ASSERT_FALSE(component1a.IsExisit());
+	ASSERT_FALSE(component1b.IsExisit());
+	ASSERT_FALSE(component2a.IsExisit());
+	ASSERT_FALSE(component2b.IsExisit());
+
+	ASSERT_FALSE(component1aa.IsExisit());
+	ASSERT_FALSE(component1bb.IsExisit());
+	ASSERT_FALSE(component2aa.IsExisit());
+	ASSERT_FALSE(component2bb.IsExisit());
+
+	ASSERT_FALSE(component1a.Find());
+	ASSERT_FALSE(component1b.Find());
+	ASSERT_FALSE(component2a.Find());
+	ASSERT_FALSE(component2b.Find());
+
+	ASSERT_FALSE(component1aa.Find());
+	ASSERT_FALSE(component1bb.Find());
+	ASSERT_FALSE(component2aa.Find());
+	ASSERT_FALSE(component2bb.Find());
+
+	ASSERT_THROW(component1a.Get(), std::logic_error);
+	ASSERT_THROW(component1b.Get(), std::logic_error);
+	ASSERT_THROW(component2a.Get(), std::logic_error);
+	ASSERT_THROW(component2b.Get(), std::logic_error);
+}
+
+TEST_F(Director, Component_Counting)
+{
+	Registry world;
+
+	Entity entity_a = world.CreateEntity();
+	entity_a.AssignComponent<Position>();
+
+	Entity entity_b = world.CreateEntity();
+	entity_b.AssignComponent<Position>();
+	entity_b.AssignComponent<Velocity>();
+	
+	Entity entity_c = world.CreateEntity();
+	entity_c.AssignComponent<Velocity>();
+	entity_c.AssignComponent<Position>();
+
+	ASSERT_TRUE(world.GetComponentCount<Position>() == 3u);
+	ASSERT_TRUE(world.GetComponentCount<Velocity>() == 2u);
+
+	ASSERT_TRUE(world.RemoveAllComponents<Position>() == 3u);
+	ASSERT_TRUE(world.GetComponentCount<Position>() == 0u);
+	ASSERT_TRUE(world.GetComponentCount<Velocity>() == 2u);
+
+	ASSERT_TRUE(world.RemoveAllComponents<Velocity>() == 2u);
+	ASSERT_TRUE(world.GetComponentCount<Position>() == 0u);
+	ASSERT_TRUE(world.GetComponentCount<Velocity>() == 0u);
+
+	ASSERT_TRUE(world.RemoveAllComponents<Position>() == 0u);
+	ASSERT_TRUE(world.RemoveAllComponents<Velocity>() == 0u);
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	ASSERT_FALSE(world.IsExisit<Position>(entity_a));
+	ASSERT_FALSE(world.IsExisit<Velocity>(entity_a));
+	ASSERT_FALSE(world.IsExisit<Position>(entity_b));
+	ASSERT_FALSE(world.IsExisit<Velocity>(entity_b));
+	ASSERT_FALSE(world.IsExisit<Position>(entity_c));
+	ASSERT_FALSE(world.IsExisit<Velocity>(entity_c));
+
+	ASSERT_TRUE(world.GetEntityComponentCount(entity_a) == 0u);
+	ASSERT_TRUE(world.GetEntityComponentCount(entity_b) == 0u);
+	ASSERT_TRUE(world.GetEntityComponentCount(entity_c) == 0u);
+
+	ASSERT_TRUE(entity_a.GetComponentCount() == 0u);
+	ASSERT_TRUE(entity_b.GetComponentCount() == 0u);
+	ASSERT_TRUE(entity_c.GetComponentCount() == 0u);
+
+	ASSERT_TRUE(world.AssignComponent<Position>(entity_a) == Position());
+	ASSERT_TRUE(world.IsExisit<Position>(entity_a));
+	ASSERT_FALSE(world.IsExisit<Velocity>(entity_a));
+	ASSERT_TRUE(world.GetComponentCount<Position>() == 1u);
+	ASSERT_TRUE(world.GetComponentCount<Velocity>() == 0u);
+	ASSERT_TRUE(world.GetEntityComponentCount(entity_a) == 1u);
+	ASSERT_TRUE(entity_a.GetComponentCount() == 1u);
+
+	ASSERT_TRUE(world.AssignComponent<Velocity>(entity_a) == Velocity());
+	ASSERT_TRUE(world.IsExisit<Position>(entity_a));
+	ASSERT_TRUE(world.IsExisit<Velocity>(entity_a));
+	ASSERT_TRUE(world.GetComponentCount<Position>() == 1u);
+	ASSERT_TRUE(world.GetComponentCount<Velocity>() == 1u);
+	ASSERT_TRUE(world.GetEntityComponentCount(entity_a) == 2u);
+	ASSERT_TRUE(entity_a.GetComponentCount() == 2u);
+
+	ASSERT_TRUE(world.RemoveAllComponents(entity_a) == 2u);
+
+	ASSERT_FALSE(world.IsExisit<Position>(entity_a));
+	ASSERT_FALSE(world.IsExisit<Velocity>(entity_a));
+	ASSERT_FALSE(world.IsExisit<Position>(entity_b));
+	ASSERT_FALSE(world.IsExisit<Velocity>(entity_b));
+	ASSERT_FALSE(world.IsExisit<Position>(entity_c));
+	ASSERT_FALSE(world.IsExisit<Velocity>(entity_c));
+
+	ASSERT_TRUE(world.GetEntityComponentCount(entity_a) == 0u);
+	ASSERT_TRUE(world.GetEntityComponentCount(entity_b) == 0u);
+	ASSERT_TRUE(world.GetEntityComponentCount(entity_c) == 0u);
+
+	ASSERT_TRUE(entity_a.GetComponentCount() == 0u);
+	ASSERT_TRUE(entity_b.GetComponentCount() == 0u);
+	ASSERT_TRUE(entity_c.GetComponentCount() == 0u);
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	ASSERT_FALSE(world.IsExisit<Position>(entity_a));
+	ASSERT_FALSE(world.IsExisit<Velocity>(entity_a));
+
+	ASSERT_TRUE(world.AssignComponent<Position>(entity_a) == Position());
+	ASSERT_TRUE(world.IsExisit<Position>(entity_a));
+	ASSERT_FALSE(world.IsExisit<Velocity>(entity_a));
+
+	ASSERT_TRUE(world.AssignComponent<Velocity>(entity_a) == Velocity());
+	ASSERT_TRUE(world.IsExisit<Position>(entity_a));
+	ASSERT_TRUE(world.IsExisit<Velocity>(entity_a));
+
+	world.DestroyEntity(entity_a);
+
+	ASSERT_TRUE(world.GetComponentCount<Position>() == 0u);
+	ASSERT_TRUE(world.GetComponentCount<Velocity>() == 0u);
+
+	ASSERT_FALSE(entity_a.IsValid());
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	ASSERT_FALSE(entity_a.IsValid());
+	
+	entity_a = world.CreateEntity();
+
+	ASSERT_TRUE(world.AssignComponent<Position>(entity_a) == Position());
+	ASSERT_TRUE(world.AssignComponent<Velocity>(entity_a) == Velocity());
+	ASSERT_TRUE(world.IsExisit<Position>(entity_a));
+	ASSERT_TRUE(world.IsExisit<Velocity>(entity_a));
+
+	ASSERT_TRUE(entity_b.IsValid());
+	ASSERT_TRUE(world.AssignComponent<Position>(entity_b) == Position());
+	ASSERT_TRUE(world.AssignComponent<Velocity>(entity_b) == Velocity());
+	ASSERT_TRUE(world.IsExisit<Position>(entity_b));
+	ASSERT_TRUE(world.IsExisit<Velocity>(entity_b));
+
+	world.DestroyEntity(entity_a);
+
+	ASSERT_TRUE(world.IsExisit<Position>(entity_b));
+	ASSERT_TRUE(world.IsExisit<Velocity>(entity_b));
+
+	world.DestroyEntity(entity_b);
+
+	ASSERT_TRUE(world.GetComponentCount<Position>() == 0u);
+	ASSERT_TRUE(world.GetComponentCount<Velocity>() == 0u);
+
+	ASSERT_FALSE(entity_a.IsValid());
+	ASSERT_FALSE(entity_b.IsValid());
+	
+	ASSERT_TRUE(entity_c.IsValid());
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	entity_a = world.CreateEntity();
+	entity_b = world.CreateEntity();
+	
+	const Position& entity_a_pos = world.AssignComponent<Position>(entity_a);
+	ASSERT_TRUE(&entity_a_pos == &world.GetComponent<Position>(entity_a));
+
+	const Position& entity_b_pos = world.AssignComponent<Position>(entity_b);
+	const Velocity& entity_b_vel = world.AssignComponent<Velocity>(entity_b);
+	ASSERT_TRUE(&entity_b_pos == &world.GetComponent<Position>(entity_b));
+	ASSERT_TRUE(&entity_b_vel == &world.GetComponent<Velocity>(entity_b));
+}
+
+TEST_F(Director, Component_Ensure)
+{
+	Registry world;
+
+	Entity entity = world.CreateEntity();
+	entity.EnsureComponent<Position>(4, 2);
+	entity.EnsureComponent<Movable>();
+
+	ASSERT_TRUE(entity.GetComponent<Position>() == Position(4, 2));
+	ASSERT_TRUE(entity.IsExisit<Movable>());
+
+	entity.EnsureComponent<Position>(0, 0).x_ = 2;
+	entity.EnsureComponent<Position>(0, 0).y_ = 4;
+	entity.EnsureComponent<Movable>();
+
+	ASSERT_TRUE(entity.GetComponent<Position>() == Position(2, 4));
+	ASSERT_TRUE(entity.IsExisit<Movable>());
+
+	auto component = world.WrapComponent<Velocity>(entity);
+	ASSERT_FALSE(component.IsExisit());
+	component.Ensure(1, 1).x_ = 4;
+	ASSERT_TRUE(component.Get() == Velocity(4, 1));
+	component.Ensure(0, 0).y_ = 2;
+	ASSERT_TRUE(component.Get() == Velocity(4, 2));
+}
+
+TEST_F(Director, Component_Multi)
+{
+	Registry world;
+
+	auto entity_a = world.CreateEntity();
+	auto entity_b = world.CreateEntity();
+
+	ASSERT_FALSE(entity_a.FindComponent<Position>());
+	ASSERT_FALSE(entity_b.FindComponent<Velocity>());
+	
+	entity_a.AssignComponent<Position>(1, 2);
+	entity_b.AssignComponent<Velocity>(3, 4);
+	
+	ASSERT_TRUE(entity_a.GetComponent<Position>().x_ == 1);
+	ASSERT_TRUE(entity_a.GetComponent<Position>().y_ == 2);
+	
+	ASSERT_TRUE(entity_b.GetComponent<Velocity>().x_ == 3);
+	ASSERT_TRUE(entity_b.GetComponent<Velocity>().y_ == 4);
+	
+	ASSERT_THROW(entity_a.GetComponent<Velocity>(), std::logic_error);
+	ASSERT_THROW(entity_b.GetComponent<Position>(), std::logic_error);
+	
+	ASSERT_TRUE(entity_a.FindComponent<Position>()->x_ == 1);
+	ASSERT_TRUE(entity_b.FindComponent<Velocity>()->x_ == 3);
+	
+	////////////////////////////////////////////////////////////////////////////////
+	
+	auto entity_c = world.CreateEntity();
+	
+	ASSERT_TRUE(entity_c.FindComponents<>() == std::make_tuple());
+	ASSERT_TRUE(entity_c.FindComponents<Velocity>() == std::make_tuple<Velocity*>(nullptr));
+	ASSERT_TRUE((entity_c.FindComponents<Position, Velocity>()) == (std::make_tuple<Position*, Velocity*>(nullptr, nullptr)));
+	
+	ASSERT_TRUE(entity_c.GetComponents<>() == std::make_tuple());
+	ASSERT_THROW(entity_c.GetComponents<Velocity>(), std::logic_error);
+	ASSERT_THROW((entity_c.GetComponents<Position, Velocity>()), std::logic_error);
+
+	{
+		const auto entity_cc = entity_c;
+
+		ASSERT_TRUE(entity_cc.FindComponents<>() == std::make_tuple());
+		ASSERT_TRUE(entity_cc.FindComponents<Velocity>() == std::make_tuple<Velocity*>(nullptr));
+		ASSERT_TRUE((entity_cc.FindComponents<Position, Velocity>()) == (std::make_tuple<Position*, Velocity*>(nullptr, nullptr)));
+	}
+
+	entity_c.AssignComponent<Velocity>(5, 6);
+	ASSERT_TRUE(entity_c.FindComponents<>() == std::make_tuple());
+	ASSERT_TRUE(entity_c.FindComponents<Velocity>() == std::make_tuple<Velocity*>(entity_c.FindComponent<Velocity>()));
+	ASSERT_TRUE((entity_c.FindComponents<Position, Velocity>()) == (std::make_tuple<Position*, Velocity*>(nullptr, entity_c.FindComponent<Velocity>())));
+
+	ASSERT_TRUE(entity_c.GetComponents<Velocity>() == std::make_tuple<Velocity&>(entity_c.GetComponent<Velocity>()));
+	ASSERT_THROW((entity_c.GetComponents<Position, Velocity>()), std::logic_error);
+
+	{
+		const auto entity_cc = entity_c;
+	
+		ASSERT_TRUE(entity_cc.FindComponents<>() == std::make_tuple());
+		ASSERT_TRUE(entity_cc.FindComponents<Velocity>() == std::make_tuple<const Velocity*>(entity_cc.FindComponent<Velocity>()));
+		ASSERT_TRUE((entity_cc.FindComponents<Position, Velocity>()) == (std::make_tuple<const Position*, const Velocity*>(nullptr, entity_cc.FindComponent<Velocity>())));
+		ASSERT_TRUE(entity_cc.GetComponents<Velocity>() == std::make_tuple<const Velocity&>(entity_cc.GetComponent<Velocity>()));
+	}
+}
+
+TEST_F(Director, Component_Cloning)
+{
+	Registry world;
+
+	auto entity_a = world.CreateEntity();
+	entity_a.AssignComponent<Position>(1, 2);
+	entity_a.AssignComponent<Velocity>(3, 4);
+
+	auto entity_b = world.CreateEntity(entity_a);
+	ASSERT_TRUE(world.GetComponentCount<Position>() == 2);
+	ASSERT_TRUE(world.GetComponentCount<Velocity>() == 2);
+	ASSERT_TRUE(entity_b.IsExisit<Position>());
+	ASSERT_TRUE(entity_b.IsExisit<Velocity>());
+	ASSERT_TRUE(entity_b.GetComponent<Position>() == Position(1, 2));
+	ASSERT_TRUE(entity_b.GetComponent<Velocity>() == Velocity(3, 4));
+
+	ASSERT_TRUE(entity_b.RemoveComponent<Velocity>());
+
+	auto entity_c = entity_b.Clone();
+
+	ASSERT_TRUE(world.GetComponentCount<Position>() == 3);
+	ASSERT_TRUE(world.GetComponentCount<Velocity>() == 1);
+
+	ASSERT_TRUE(entity_c.IsExisit<Position>());
+	ASSERT_FALSE(entity_c.IsExisit<Velocity>());
+	ASSERT_TRUE(entity_c.GetComponent<Position>() == Position(1, 2));
+}
+
+TEST_F(Director, Component_ForEach)
+{
+	Registry world;
+
+	auto entity_a = world.CreateEntity();
+	auto entity_b = world.CreateEntity();
+
+//	{
+//		EntityId id;
+//		world.ForEachEntity
+//		(
+//			[&id](const Entity& entity)
+//			{
+//				id += entity.GetId();
+//			}
+//		);
+//	
+//		ASSERT_TRUE(id == entity_a.GetId() + entity_b.GetId());
+//	}
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	entity_a.AssignComponent<Position>(1, 2);
+	entity_a.AssignComponent<Velocity>(3, 4);
+	entity_b.AssignComponent<Position>(5, 6);
+	entity_b.AssignComponent<Velocity>(7, 8);
+
+	{
+//		std::size_t id = 0;
+		Position pos;
+
+		world.ForEachComponent<Position>
+		(
+//			[&id, &pos](Entity entity, Position& position)
+			[&pos](Entity entity, Position& position)
+			{
+//				id += entity.GetId();
+				pos.x_ += position.x_;
+				pos.y_ += position.y_;
+			}
+		);
+
+//		ASSERT_TRUE(id == entity_a.GetId() + entity_b.GetId());
+		ASSERT_TRUE(pos.x_ == entity_a.GetComponent<Position>().x_ + entity_b.GetComponent<Position>().x_);
+		ASSERT_TRUE(pos.y_ == entity_a.GetComponent<Position>().y_ + entity_b.GetComponent<Position>().y_);
+	}
+
+	entity_a.Destroy();
+	entity_b.Destroy();
+
+	auto entity_c = world.CreateEntity();
+	auto entity_d = world.CreateEntity();
+
+	entity_c.AssignComponent<Position>(11, 22);
+	entity_d.AssignComponent<Position>(33, 44);
+
+	{
+//		std::size_t id = 0;
+		Position pos;
+
+		world.ForEachComponent<Position>
+		(
+//			[&id, &pos](Entity entity, Position& position)
+			[&pos](Entity entity, Position& position)
+			{
+//				id += entity.GetId();
+				pos.x_ += position.x_;
+				pos.y_ += position.y_;
+			}
+		);
+
+//		ASSERT_TRUE(id == entity_c.GetId() + entity_d.GetId());
+		ASSERT_TRUE(pos.x_ == entity_c.GetComponent<Position>().x_ + entity_d.GetComponent<Position>().x_);
+		ASSERT_TRUE(pos.y_ == entity_c.GetComponent<Position>().y_ + entity_d.GetComponent<Position>().y_);
+	}
+}
+
+TEST_F(Director, Options)
+{
+	Registry world;
+
+	auto entity = world.CreateEntity();
+
+	ASSERT_FALSE((Option<Position>{})(entity));
+	ASSERT_FALSE((Option<Velocity>{})(entity));
+
+	ASSERT_FALSE((OptionAny<>{})(entity));
+	ASSERT_FALSE((OptionAny<Position>{})(entity));
+	ASSERT_FALSE((OptionAny<Velocity>{})(entity));
+	ASSERT_FALSE((OptionAny<Position, Velocity>{})(entity));
+}
+
+TEST_F(Director, Systems)
+{
+	struct UpdateEvent
+	{
+		int dt_ = 0;
+	};
+	
+	class GravitySystem : public System<UpdateEvent>
+	{
+		int g_ = 0;
+	public:
+		GravitySystem(int g)
+			: g_(g)
+		{
+		}
+	
+		void Process(Registry& owner, const UpdateEvent& event) override
+		{
+			owner.ForEachComponent<Velocity>
+			(
+				[this, &event](Entity entity, Velocity& velocity)
+				{
+					velocity.x_ += g_ * event.dt_;
+					velocity.y_ += g_ * event.dt_;
+				},
+				!Option<Disabled>()
+			);
+		}
+	};
+	
+	class MovementSystem : public System<UpdateEvent>
+	{
+	public:
+		void Process(Registry& owner, const UpdateEvent& event) override
+		{
+			owner.ForEachComponentSequence<Position, Velocity>
+			(
+				[&event](Entity entity, Position& position, const Velocity& velocity)
+				{
+					position.x_ += velocity.x_ * event.dt_;
+					position.y_ += velocity.y_ * event.dt_;
+				},
+				!Option<Disabled>()
+			);
+		}
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	Registry world;
+
+	struct Physics
+	{;
+	};
+
+	ASSERT_FALSE(world.HasFeature<Physics>());
+	ASSERT_THROW(world.GetFeature<Physics>(), std::logic_error);
+
+	auto& feature_a = world.AssignFeature<Physics>();
+	feature_a.MountSystem<GravitySystem>(9);
+
+	ASSERT_TRUE(world.HasFeature<Physics>());
+
+	auto& feature_b = world.EnsureFeature<Physics>();
+	feature_b.MountSystem<MovementSystem>();
+
+	ASSERT_TRUE(world.HasFeature<Physics>());
+
+	auto entity = world.CreateEntity();
+	entity.AssignComponent<Position>(1, 2);
+	entity.AssignComponent<Velocity>(3, 4);
+
+	ASSERT_TRUE(entity.GetComponent<Position>().x_ == 1);
+	ASSERT_TRUE(entity.GetComponent<Position>().y_ == 2);
+	ASSERT_TRUE(entity.GetComponent<Velocity>().x_ == 3);
+	ASSERT_TRUE(entity.GetComponent<Velocity>().y_ == 4);
+
+	world.GetFeature<Physics>().Disable();
+	world.Process(UpdateEvent{2});
+
+	ASSERT_TRUE(entity.GetComponent<Position>().x_ == 1);
+	ASSERT_TRUE(entity.GetComponent<Position>().y_ == 2);
+	ASSERT_TRUE(entity.GetComponent<Velocity>().x_ == 3);
+	ASSERT_TRUE(entity.GetComponent<Velocity>().y_ == 4);
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	world.GetFeature<Physics>().Enable();
+	world.Process(UpdateEvent{ 2 });
+
+	ASSERT_TRUE(entity.GetComponent<Position>().x_ == 1 + ((3 + (9 * 2)) * 2));
+	ASSERT_TRUE(entity.GetComponent<Position>().y_ == 2 + ((4 + (9 * 2)) * 2));
+	ASSERT_TRUE(entity.GetComponent<Velocity>().x_ == 3 + (9 * 2));
+	ASSERT_TRUE(entity.GetComponent<Velocity>().y_ == 4 + (9 * 2));
+}

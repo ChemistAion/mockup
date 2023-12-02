@@ -1,0 +1,61 @@
+#pragma once
+
+#include "parallel.hpp"
+
+#include "parallel/scheduler.hpp"
+
+namespace Primitives
+{
+	struct YieldSubSubTask
+	{
+		std::atomic_int* counter_ = nullptr;
+
+		void Process()
+		{
+			assert(counter_);
+			counter_->fetch_add(1, std::memory_order_acq_rel);
+		}
+	} YieldSubSubTask_;
+
+	struct YieldSubTask
+	{
+		std::atomic_int* counter_ = nullptr;
+
+		static const int subtasks_ = 8;
+		static const int yieldtasks_ = 8;
+
+		void Process()
+		{
+			assert(counter_);
+			counter_->fetch_add(1, std::memory_order_acq_rel);
+
+			auto group = Fiber::GetCurrentGroup();
+
+			YieldSubSubTask_.counter_ = counter_;
+
+			Fiber::AddTasks(group, subtasks_, &YieldSubSubTask_, &YieldSubSubTask::Process);
+			Fiber::AddTasksYielding(group, yieldtasks_, &YieldSubSubTask_, &YieldSubSubTask::Process);
+		}
+	} YieldSubTask_;
+
+	struct YieldTask
+	{
+		std::atomic_int* counter_ = nullptr;
+
+		static const int subtasks_ = 8;
+		static const int yieldtasks_ = 8;
+
+		void Process()
+		{
+			assert(counter_);
+			counter_->fetch_add(1, std::memory_order_acq_rel);
+
+			auto group = Fiber::GetCurrentGroup();
+
+			YieldSubTask_.counter_ = counter_;
+
+			Fiber::AddTasksYielding(group, yieldtasks_, &YieldSubTask_, &YieldSubTask::Process);
+			Fiber::AddTasks(group, subtasks_, &YieldSubTask_, &YieldSubTask::Process);
+		}
+	};
+}

@@ -1,0 +1,61 @@
+#pragma once
+
+#include "parallel.hpp"
+
+#include "yielding.hpp"
+
+using namespace Primitives;
+
+////////////////////////////////////////////////////////////////////////////////
+
+BENCHMARK_DEFINE_F(Scheduler_Fixture, Yielding_Benchmark)(benchmark::State& state)
+{
+	while (state.KeepRunning())
+	{
+		auto group = scheduler_->CreateGroup();
+
+		std::atomic_int counter;
+		counter.store(0, std::memory_order_release);
+
+		YieldTask task;
+		task.counter_ = &counter;
+
+		const auto subtasks = 16;
+
+		scheduler_->AddTasks(group, subtasks, &task, &YieldTask::Process);
+
+		for (;;)
+		{
+			auto result = scheduler_->Wait(group, std::chrono::seconds(1));
+
+			if (result == Scheduler::WaitStatus::Done)
+			{
+				break;
+			}
+
+			if (result == Scheduler::WaitStatus::Timeout)
+			{
+				state.SkipWithError("Timeout");
+				break;
+			}
+		}
+
+		auto level1 = subtasks;
+		auto level2 = (YieldTask::subtasks_ + YieldTask::yieldtasks_) * level1;
+		auto level3 = (YieldSubTask::subtasks_ + YieldSubTask::yieldtasks_) * level2;
+
+		auto tasks_total = level1 + level2 + level3;
+
+		if (tasks_total != counter.load(std::memory_order_acquire))
+		{
+			state.SkipWithError("Bad result");
+		}
+
+		scheduler_->ReleaseGroup(group);
+	}
+}
+
+BENCHMARK_REGISTER_F(Scheduler_Fixture, Yielding_Benchmark)->Repetitions(16)->Unit(benchmark::kMicrosecond)->ReportAggregatesOnly(false)->DisplayAggregatesOnly(false);
+
+////////////////////////////////////////////////////////////////////////////////
+

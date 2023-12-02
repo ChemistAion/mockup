@@ -1,0 +1,58 @@
+#pragma once
+
+#include "parallel.hpp"
+
+#include "fibonacci.hpp"
+
+using namespace Primitives;
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr int fibonacci(int i)
+{
+	return (i <= 1) ? i : (fibonacci(i - 1) + fibonacci(i - 2));
+}
+
+BENCHMARK_DEFINE_F(Parallel_V2, Fibonacci_Benchmark)(benchmark::State& state)
+{
+	using namespace Mockup::Parallel::V2;
+
+	while (state.KeepRunning())
+	{
+		auto group = scheduler_->CreateGroup();
+
+		const auto deep_tasks = 12;
+
+		DeepTask<deep_tasks> task;
+
+		scheduler_->AddTasks(group, 1, &task, &decltype(task)::Process);
+
+		for (;;)
+		{
+			auto result = scheduler_->Wait(group, std::chrono::seconds(1));
+
+			if (result == Scheduler::WaitStatus::Done)
+			{
+				break;
+			}
+
+			if (result == Scheduler::WaitStatus::Timeout)
+			{
+				state.SkipWithError("Timeout");
+				break;
+			}
+		}
+
+		if (fibonacci(deep_tasks) != task.result_)
+		{
+			state.SkipWithError("Bad result");
+		}
+
+		scheduler_->ReleaseGroup(group);
+	}
+}
+
+BENCHMARK_REGISTER_F(Parallel_V2, Fibonacci_Benchmark)->Repetitions(16)->Unit(benchmark::kMicrosecond)->ReportAggregatesOnly(false)->DisplayAggregatesOnly(false);
+
+////////////////////////////////////////////////////////////////////////////////
+

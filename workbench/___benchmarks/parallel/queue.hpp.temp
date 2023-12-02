@@ -1,0 +1,468 @@
+#pragma once
+
+#include "parallel.hpp"
+
+#include <array>
+#include <atomic>
+#include <memory>
+#include <mutex>
+#include <vector>
+
+namespace Primitives
+{
+	////////////////////////////////////////////////////////////////////////////////
+
+	template<typename Type, int Capacity>
+	class Queue_DmitryVyukov final
+	{
+		struct Cell
+		{
+			std::atomic_int sequence_;
+			Type data_;
+		};
+
+		alignas(std::hardware_destructive_interference_size) Cell* buffer_;	
+		alignas(std::hardware_destructive_interference_size) std::atomic_int enqueue_;
+		alignas(std::hardware_destructive_interference_size) std::atomic_int dequeue_;
+	public:
+		Queue_DmitryVyukov()
+		{
+			static_assert((Capacity > 0 && ((Capacity & (Capacity - 1)) == 0)));
+
+			buffer_ = new (std::nothrow) Cell[Capacity];
+
+			for (auto index = 0; index < Capacity; ++index)
+			{
+				buffer_[index].sequence_.store(index, std::memory_order_relaxed);
+			}
+
+			enqueue_.store(0, std::memory_order_relaxed);
+			dequeue_.store(0, std::memory_order_relaxed);
+		}
+
+		~Queue_DmitryVyukov()
+		{
+			delete[] buffer_;
+		}
+
+		bool Enqueue(Type data)
+		{
+			Cell* cell;
+
+			auto position = enqueue_.load(std::memory_order_relaxed);
+
+			////////////////////////////////////////////////////////////////////////////////
+
+			for (;;)
+			{
+				cell = &buffer_[position & (Capacity - 1)];
+
+				auto sequence = cell->sequence_.load(std::memory_order_acquire);
+
+				auto diff = (std::intptr_t)sequence - (std::intptr_t)position;
+
+				if (diff == 0)
+				{
+					if (enqueue_.compare_exchange_weak(position, position + 1, std::memory_order_acq_rel))
+					{
+						break;
+					}
+
+					continue;
+				}
+
+				if (diff < 0)
+				{
+					return false;
+				}
+
+				position = enqueue_.load(std::memory_order_relaxed);
+			}
+
+			////////////////////////////////////////////////////////////////////////////////
+
+			cell->data_ = data;
+			cell->sequence_.store(position + 1, std::memory_order_release);
+
+			return true;
+		}
+
+		bool Dequeue(Type& data)
+		{
+			Cell* cell;
+
+			auto position = dequeue_.load(std::memory_order_relaxed);
+
+			////////////////////////////////////////////////////////////////////////////////
+
+			for (;;)
+			{
+				cell = &buffer_[position & (Capacity - 1)];
+
+				auto sequence = cell->sequence_.load(std::memory_order_acquire);
+
+				auto diff = (std::intptr_t)sequence - (std::intptr_t)(position + 1);
+
+				if (diff == 0)
+				{
+					if (dequeue_.compare_exchange_weak(position, position + 1, std::memory_order_acq_rel))
+					{
+						break;
+					}
+
+					continue;
+				}
+
+				if (diff < 0)
+				{
+					return false;
+				}
+
+				position = dequeue_.load(std::memory_order_relaxed);
+			}
+
+			////////////////////////////////////////////////////////////////////////////////
+
+			data = cell->data_;
+			cell->sequence_.store(position + (Capacity - 1) + 1, std::memory_order_release);
+
+			return true;
+		}
+	};
+
+	class Queue_DmitryVyukov_Fixture : public benchmark::Fixture
+	{
+	public:
+		static Queue_DmitryVyukov<int, 2048> queue_[PoolSize_Tasks];;
+	protected:
+		//	Queue_DmitryVyukov_Fixture()
+		//	{
+		//	}
+		//	
+		//	~Queue_DmitryVyukov_Fixture()
+		//	{
+		//	}
+		//	
+		//	void SetUp(const ::benchmark::State&)
+		//	{
+		//	}
+		//	
+		//	void TearDown(const ::benchmark::State&)
+		//	{
+		//	}
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	class MutexArray_Fixture : public benchmark::Fixture
+	{
+	public:
+		static std::array<int, 2048> array_;
+		static std::mutex lock_;
+	protected:
+		//	MutexArray_Fixture()
+		//	{
+		//	}
+		//	
+		//	~MutexArray_Fixture()
+		//	{
+		//	}
+		//	
+		//	void SetUp(const ::benchmark::State&)
+		//	{
+		//	}
+		//	
+		//	void TearDown(const ::benchmark::State&)
+		//	{
+		//	}
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	template<typename T>
+	class Queue_RichieSams
+	{
+	public:
+		Queue_RichieSams()
+			: m_top(1), // m_top and m_bottom must start at 1
+			m_bottom(1), // Otherwise, the first Pop on an empty queue will underflow m_bottom
+			m_array(new CircularArray(1<<20))
+		{
+		}
+
+		~Queue_RichieSams() {
+			delete m_array.load(std::memory_order_relaxed);
+		}
+
+	private:
+		class CircularArray
+		{
+		public:
+			CircularArray(std::size_t n)
+				: items(n) {
+				assert(!(n == 0) && !(n & (n - 1)) && "n must be a power of 2");
+		}
+
+		private:
+			std::vector<T> items;
+			std::unique_ptr<CircularArray> previous;
+
+		public:
+			std::size_t Size() const
+			{
+				return items.size();
+			}
+
+			T Get(std::size_t index)
+			{
+				return items[index & (Size() - 1)];
+			}
+
+			void Put(std::size_t index, T x)
+			{
+				items[index & (Size() - 1)] = x;
+			}
+
+			// Growing the array returns a new circular_array object and keeps a
+			// linked list of all previous arrays. This is done because other threads
+			// could still be accessing elements from the smaller arrays.
+			CircularArray *Grow(std::size_t top, std::size_t bottom)
+			{
+				CircularArray *new_array = new CircularArray(Size() * 2);
+				new_array->previous.reset(this);
+				for (std::size_t i = top; i != bottom; i++)
+				{
+					new_array->Put(i, Get(i));
+				}
+				return new_array;
+			}
+		};
+
+		alignas(std::hardware_destructive_interference_size) std::atomic<std::uint64_t> m_top;
+		alignas(std::hardware_destructive_interference_size) std::atomic<std::uint64_t> m_bottom;
+		alignas(std::hardware_destructive_interference_size) std::atomic<CircularArray *> m_array;
+
+	public:
+		void Enqueue(T value)
+		{
+			std::uint64_t b = m_bottom.load(std::memory_order_relaxed);
+			std::uint64_t t = m_top.load(std::memory_order_acquire);
+			CircularArray *array = m_array.load(std::memory_order_relaxed);
+
+			if (b - t > array->Size() - 1)
+			{
+				/* Full queue. */
+				array = array->Grow(t, b);
+				m_array.store(array, std::memory_order_release);
+			}
+			array->Put(b, value);
+
+			std::atomic_signal_fence(std::memory_order_release);
+
+			m_bottom.store(b + 1, std::memory_order_relaxed);
+		}
+
+		bool Dequeue(T *value)
+		{
+			std::uint64_t b = m_bottom.load(std::memory_order_relaxed) - 1;
+			CircularArray *array = m_array.load(std::memory_order_relaxed);
+			m_bottom.store(b, std::memory_order_relaxed);
+
+			std::atomic_thread_fence(std::memory_order_seq_cst);
+
+			std::uint64_t t = m_top.load(std::memory_order_relaxed);
+			bool result = true;
+			if (t <= b)
+			{
+				/* Non-empty queue. */
+				*value = array->Get(b);
+				if (t == b)
+				{
+					/* Single last element in queue. */
+					if (!std::atomic_compare_exchange_strong_explicit(&m_top, &t, t + 1, std::memory_order_seq_cst, std::memory_order_relaxed))
+					{
+						/* Failed race. */
+						result = false;
+					}
+					m_bottom.store(b + 1, std::memory_order_relaxed);
+				}
+			}
+			else
+			{
+				/* Empty queue. */
+				result = false;
+				m_bottom.store(b + 1, std::memory_order_relaxed);
+			}
+
+			return result;
+		}
+	};
+
+//	template<typename Type>
+//	class QueueTest final
+//	{
+//	private:
+//		class Storage
+//		{
+//		public:
+//			Storage(std::size_t size)
+//				: elements_(size)
+//			{
+//			}
+//	
+//		private:
+//			std::vector<Type> elements_;
+//			std::unique_ptr<Storage> previous_;
+//	
+//		public:
+//			auto Size() const
+//			{
+//				return elements_.size();
+//			}
+//	
+//			Type Get(std::size_t index)
+//			{
+//				return elements_[index & (Size() - 1)];
+//			}
+//	
+//			void Put(std::size_t index, Type element)
+//			{
+//				elements_[index & (Size() - 1)] = element;
+//			}
+//	
+//			Storage* Grow(std::size_t top, std::size_t bottom)
+//			{
+//				Storage* storage = new Storage(Size() * 2);
+//	
+//				if (!storage)
+//				{
+//					return nullptr;
+//				}
+//	
+//				storage->previous_.reset(this);
+//	
+//				for (std::size_t index = top; index < bottom; index++)
+//				{
+//					storage->Put(index, Get(index));
+//				}
+//	
+//				return storage;
+//			}
+//		};
+//	
+//		CachePad cache_0_;
+//		std::atomic_uint64_t top_;
+//		CachePad cache_1_;
+//		std::atomic_uint64_t bottom_;
+//		CachePad cache_2_;
+//		std::atomic<Storage*> storage_;
+//		CachePad cache_3_;
+//	public:
+//		QueueTest()
+//		{
+//			top_.store(1, std::memory_order_seq_cst);
+//			bottom_.store(1, std::memory_order_seq_cst);
+//	
+//			storage_ = new Storage(2048);
+//			assert(storage_);
+//		}
+//	
+//		~QueueTest()
+//		{
+//			if (storage_)
+//			{
+//				delete storage_.load(std::memory_order_relaxed);
+//			}
+//		}
+//	
+//		QueueTest(const QueueTest&) = delete;
+//		QueueTest& operator=(const QueueTest&) = delete;
+//	
+//		////////////////////////////////////////////////////////////////////////////////
+//	
+//		bool Enqueue(Type value)
+//		{
+//			auto bottom = bottom_.load(std::memory_order_relaxed);
+//			auto top = top_.load(std::memory_order_acquire);
+//			auto storage = storage_.load(std::memory_order_relaxed);
+//	
+//			if (bottom - top > storage->Size() - 1)
+//			{
+//				storage = storage->Grow(top, bottom);
+//	
+//				if (!storage)
+//				{
+//					return false;
+//				}
+//	
+//				storage_.store(storage, std::memory_order_release);
+//			}
+//	
+//			storage->Put(bottom, value);
+//	
+//			std::atomic_thread_fence(std::memory_order_release);
+//	
+//			bottom_.store(bottom + 1, std::memory_order_relaxed);
+//	
+//			return true;
+//		}
+//	
+//		bool Dequeue(Type& value)
+//		{
+//			auto bottom = bottom_.load(std::memory_order_relaxed) - 1;
+//			auto storage = storage_.load(std::memory_order_relaxed);
+//	
+//			bottom_.store(bottom, std::memory_order_relaxed);
+//	
+//			std::atomic_thread_fence(std::memory_order_seq_cst);
+//	
+//			auto top = top_.load(std::memory_order_relaxed);
+//	
+//			auto result = true;
+//	
+//			if (top <= bottom)
+//			{
+//				value = storage->Get(bottom);
+//	
+//				if (top == bottom)
+//				{
+//					if (!top_.compare_exchange_strong(top, top + 1, std::memory_order_seq_cst, std::memory_order_relaxed))
+//					{
+//						return false;
+//					}
+//	
+//					bottom_.store(bottom + 1, std::memory_order_relaxed);
+//				}
+//			}
+//			else
+//			{
+//				result = false;
+//				bottom_.store(bottom + 1, std::memory_order_relaxed);
+//			}
+//	
+//			return result;
+//		}
+//	};
+
+	class Queue_RichieSams_Fixture : public benchmark::Fixture
+	{
+	public:
+		static Queue_RichieSams<int> queue_[PoolSize_Tasks];
+	protected:
+		//	Queue_RichieSams_Fixture()
+		//	{
+		//	}
+		//	
+		//	~Queue_RichieSams_Fixture()
+		//	{
+		//	}
+		//	
+		//	void SetUp(const ::benchmark::State&)
+		//	{
+		//	}
+		//	
+		//	void TearDown(const ::benchmark::State&)
+		//	{
+		//	}
+	};
+}

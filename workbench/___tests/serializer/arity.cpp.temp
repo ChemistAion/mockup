@@ -1,0 +1,120 @@
+#include "arity.hpp"
+
+using namespace Primitives;
+
+//	TEST_F(Serializer, Arity_SimplePODs)
+//	{
+//		auto result1 = Arity<Field1>();
+//		auto result2 = Arity<Field2>();
+//		auto result3 = Arity<Field3>();
+//		auto result4 = Arity<Field4>();
+//		auto result5 = Arity<Field5>();
+//		auto result6 = Arity<Field6>();
+//		auto result7 = Arity<Field7>();
+//		auto result8 = Arity<Field8>();
+//		auto result9 = Arity<Field9>();
+//		auto result10 = Arity<Field10>();
+//		auto result11 = Arity<Field11>();
+//		auto result12 = Arity<Field12>();
+//		auto result13 = Arity<Field13>();
+//		auto result14 = Arity<Field14>();
+//		auto result15 = Arity<Field15>();
+//		auto result16 = Arity<Field16>();
+//	
+//		ASSERT_EQ(1, result1);
+//		ASSERT_EQ(2, result2);
+//		ASSERT_EQ(3, result3);
+//		ASSERT_EQ(4, result4);
+//		ASSERT_EQ(5, result5);
+//		ASSERT_EQ(6, result6);
+//		ASSERT_EQ(7, result7);
+//		ASSERT_EQ(8, result8);
+//		ASSERT_EQ(9, result9);
+//		ASSERT_EQ(10, result10);
+//		ASSERT_EQ(11, result11);
+//		ASSERT_EQ(12, result12);
+//		ASSERT_EQ(13, result13);
+//		ASSERT_EQ(14, result14);
+//		ASSERT_EQ(15, result15);
+//		ASSERT_EQ(16, result16);
+//	}
+
+//	TEST_F(Serializer, Arity_Aggregates)
+//	{
+//		auto result_empty = Arity<EmptyPOD>();
+//		auto result_one = Arity<OnePOD>();
+//		auto result_two = Arity<TwoPOD>();
+//	
+//		auto result_uncopyable = Arity<Uncopyable>();
+//		auto result_immobile = Arity<Immobile>();
+//		auto result_uncopyable3 = Arity<Uncopyable3>();
+//		auto result_immobile3 = Arity<Immobile3>();
+//		auto result_uncopyable0 = Arity<Uncopyable0>();
+//		auto result_immobile0 = Arity<Immobile0>();
+//	
+//		ASSERT_EQ(result_empty, 0);
+//		ASSERT_EQ(result_one, 1);
+//		ASSERT_EQ(result_two, 2);
+//	
+//		ASSERT_EQ(result_uncopyable, 1);
+//		ASSERT_EQ(result_immobile, 1);
+//		ASSERT_EQ(result_uncopyable3, 3);
+//		ASSERT_EQ(result_immobile3, 3);
+//		ASSERT_EQ(result_uncopyable0, 0);
+//		ASSERT_EQ(result_immobile0, 0);
+//	
+//		auto result_complex_empty1 = Arity<ComplexEmpty1POD>();
+//		auto result_complex_empty2 = Arity<ComplexEmpty2POD>();
+//	
+//		ASSERT_EQ(result_complex_empty1, 3);
+//		ASSERT_EQ(result_complex_empty2, 3);
+//	
+//		auto result_complex_ctors0 = Arity<ComplexCtors0>();
+//		auto result_complex_ctors1 = Arity<ComplexCtors1>();
+//		auto result_complex_ctors2 = Arity<ComplexCtors2>();
+//		auto result_complex_ctors3 = Arity<ComplexCtors3>();
+//		auto result_complex_ctors4 = Arity<ComplexCtors4>();
+//		auto result_complex_ctors5 = Arity<ComplexCtors5>();
+//		auto result_complex_ctors6 = Arity<ComplexCtors6>();
+//		auto result_complex_ctors7 = Arity<ComplexCtors7>();
+//	//	auto result_complex_ctors8 = Arity<ComplexCtors8>();
+//	//	auto result_complex_ctors9 = Arity<ComplexCtors9>();
+//	//	auto result_complex_ctors10 = Arity<ComplexCtors10>();
+//	//	auto result_complex_ctors11 = Arity<ComplexCtors11>();
+//	//	auto result_complex_ctors12 = Arity<ComplexCtors12>();
+//	
+//	//	auto traits8_default_constructible = std::is_default_constructible_v<ComplexCtors8>;
+//	//	auto traits9_default_constructible = std::is_default_constructible_v<ComplexCtors9>;
+//	//	auto traits10_default_constructible = std::is_default_constructible_v<ComplexCtors10>;
+//	//	auto traits11_default_constructible = std::is_default_constructible_v<ComplexCtors11>;
+//	//	auto traits12_default_constructible = std::is_default_constructible_v<ComplexCtors12>;
+//	
+//		ASSERT_EQ(result_complex_ctors0, 0);
+//		ASSERT_EQ(result_complex_ctors1, 3);
+//		ASSERT_EQ(result_complex_ctors2, 3);
+//		ASSERT_EQ(result_complex_ctors3, 3);
+//		ASSERT_EQ(result_complex_ctors4, 3);
+//		ASSERT_EQ(result_complex_ctors5, 3);
+//		ASSERT_EQ(result_complex_ctors6, 3);
+//		ASSERT_EQ(result_complex_ctors7, 3);
+//	//	ASSERT_EQ(result_complex_ctors8, 0);
+//	//	ASSERT_EQ(result_complex_ctors9, 0);
+//	//	ASSERT_EQ(result_complex_ctors10, 0);
+//	//	ASSERT_EQ(result_complex_ctors11, 0);
+//	//	ASSERT_EQ(result_complex_ctors12, 0);
+//	}
+
+//	TEST_F(Serializer, Arity_NonAggregates)
+//	{
+//		auto result_complex1 = Arity<ComplexStorage1>();
+//		auto result_complex2 = Arity<ComplexStorage2>();
+//		auto result_complex3 = Arity<ComplexStorage3>();
+//		auto result_complex4 = Arity<ComplexStorage4>();
+//		auto result_complex5 = Arity<ComplexStorage5>();
+//	
+//		ASSERT_EQ(result_complex1, 1);
+//		ASSERT_EQ(result_complex2, 3);
+//		ASSERT_EQ(result_complex3, 2);
+//		ASSERT_EQ(result_complex4, 2);
+//		ASSERT_EQ(result_complex5, 3);
+//	}

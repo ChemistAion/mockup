@@ -1,0 +1,36 @@
+[std::any]
+https://stackoverflow.com/questions/61969316/is-it-possible-to-put-lambda-expressions-into-a-map-or-list-in-c
+
+[json]
+https://simdjson.org/api/0.8.0/index.html
+
+[rtx]
+http://alextardif.com/DXRQuickStart.html
+
+[filesystem]
+https://github.com/apetrone/simplefilewatcher
+https://docs.microsoft.com/en-us/windows/win32/fileio/obtaining-directory-change-notifications?redirectedfrom=MSDN
+https://www.codeproject.com/Articles/4692/How-to-get-a-notification-if-change-occurs-in-a-sp
+https://stackoverflow.com/questions/931093/how-do-i-make-my-program-watch-for-file-modification-in-c
+
+[VFX]
+https://harataworu.booth.pm/
+
+[mesh]
+https://www.pandza.xyz/en/article/43/advanced-geometry-processing-with-dx12-amplification-and-mesh-shaders
+
+[lambda]
+https://taylorconor.com/blog/noncopyable-lambdas/
+
+////////////////////////////////////////////////////////////////////////////////
+
+Physics for Game Programmers: Spatial Data Structures
+Gino van den Bergen 
+https://tizianzeltner.com/
+
+
+https://github.com/Crisspl/IrrlichtBAW/commit/914b50d7238fc4a30f23fc2a4ea570e467f4ab75#r34031272
+https://github.com/Razakhel/RaZ/issues/17
+https://github.com/KhronosGroup/glTF/issues/1853
+
+https://www.gdcvault.com/play/1026182/
